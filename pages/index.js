@@ -1,5 +1,9 @@
 import React from 'react'
 
 export default function index() {
-  return <div>123123</div>
+  return (
+    <div>
+      <img src="/next.svg" />
+    </div>
+  )
 }
