@@ -1,3 +1,4 @@
+import { ClientPageRoot } from 'next/dist/client/components/client-page'
 import { useState } from 'react'
 
 const sample = [
@@ -150,13 +151,138 @@ export default function ObjectArray() {
         6. 刪除文字為b的物件資料
       </button>
       <br />
-      <button onClick={() => {}}>7. 刪除id為4的物件資料</button>
+      <button
+        onClick={() => {
+          // 第1種: 使用filter
+          // 過濾後剩下除了id為4的資料 相當於 刪除id為4的資料
+          // const nextData = data.filter((v, i) => {
+          //   return v.id !== 4
+          // })
+
+          // setData(nextData)
+
+          // 第2種: for迴圈
+          // const nextData = []
+
+          // for (let i = 0; i < data.length; i++) {
+          //   if (data[i].id !== 4) {
+          //     nextData.push(data[i])
+          //   }
+          // }
+
+          // setData(nextData)
+
+          // 第3種: 使用splice(粘接)，注意有副作用，呼叫它的陣列有可能會被更動，使用時要套用公式為佳
+          // 刪除公式: array.splice(deleteIndex, 1)
+          // 1. 尋找id為4的索引
+          const foundIndex = data.findIndex((v) => v.id === 4)
+
+          // 2. 判斷有沒有找到
+          if (foundIndex > -1) {
+            // 有找到
+            // 1 拷貝，使用深拷貝
+            //const nextData = [...data]
+            const nextData = JSON.parse(JSON.stringify(data))
+            // 2 在複本上處理
+            nextData.splice(foundIndex, 1)
+            // 3 設定回狀態
+            setData(nextData)
+          }
+        }}
+      >
+        7. 刪除id為4的物件資料
+      </button>
       <br />
-      <button onClick={() => {}}>8. 取代id為3的文字為cccc</button>
+      <button
+        onClick={() => {
+          // 第1種: 使用map
+          // 展開每個成員
+          const nextData = data.map((v, i) => {
+            // 如果符合(id是3)，回傳修改其中屬性text為'cccc'的物件
+            if (v.id === 3) return { ...v, text: 'cccc' }
+            // 否則回傳原本物件
+            else return v
+          })
+
+          setData(nextData)
+
+          // // 第2種: 深拷貝+更動
+          // // 1. 尋找是否有id為3的資料索引
+          // const foundIndex = data.findIndex((v) => v.id === 3)
+
+          // // 2. 判斷是否有找到，有找到再處理
+          // if (foundIndex > -1) {
+          //   // 2-1 深拷貝(或是用structureClone)
+          //   const nextData = JSON.parse(JSON.stringify(data))
+          //   // 2-2 在nextData上更動資料
+          //   nextData[foundIndex].text = 'cccc'
+          //   // 2-3 設定到狀態
+          //   setData(nextData)
+          // }
+        }}
+      >
+        8. 取代id為3的文字為cccc
+      </button>
       <br />
-      <button onClick={() => {}}>9. 清空表格</button>
+      <button
+        onClick={() => {
+          setData([])
+        }}
+      >
+        9. 清空表格
+      </button>
       <br />
-      <button onClick={() => {}}>
+      <button
+        onClick={() => {
+          // 第1種: 使用slice(分割)
+          // 公式: array.slice(startIndex, endIndex)，注意不包含endIndex成員
+          // 1. 尋找是否有id為2的資料索引
+          // const foundIndex = data.findIndex((v) => v.id === 2)
+          // // 2. 判斷是否有找到，有找到再處理
+          // if (foundIndex > -1) {
+          //   // 2-1 建立(分割出)兩個子女陣列
+          //   const aa = data.slice(0, foundIndex + 1)
+          //   const ab = data.slice(foundIndex + 1)
+          //   // console.log(aa, ab)
+          //   // 寫出要新增的物件值
+          //   const newObj = { id: 5, text: 'bbb' }
+          //   // 2-2 組合為出一個新的陣列
+          //   const nextData = [...aa, newObj, ...ab]
+          //   // 2-3 設定到狀態
+          //   setData(nextData)
+          // }
+
+          // 第2種: 使用splice(粘接)，注意有副作用，呼叫它的陣列有可能會被更動，使用時要套用公式為佳
+          // 刪除公式(到某索引值之後): array.splice(insertIndex + 1, 0, value)
+          // 1. 尋找是否有id為2的資料索引
+          // const foundIndex = data.findIndex((v) => v.id === 2)
+          // // 2. 判斷是否有找到，有找到再處理
+          // if (foundIndex > -1) {
+          //   // 2-1 深拷貝(或是用structureClone)
+          //   const nextData = JSON.parse(JSON.stringify(data))
+          //   // 此操作並沒處理到物件層級，所以淺拷貝陣列即可
+          //   // const nextData = [...data]
+          //   // 2-2 在nextData上更動資料
+          //   nextData.splice(foundIndex + 1, 0, { id: 5, text: 'bbb' })
+          //   // 2-3 設定到狀態
+          //   setData(nextData)
+          // }
+
+          // 第3種: for迴圈
+          const nextData = []
+
+          for (let i = 0; i < data.length; i++) {
+            //固定把data中的成員一個個加入
+            nextData.push(data[i])
+            // 如果id為2，在它後面加入一個新的物件
+            if (data[i].id === 2) {
+              nextData.push({ id: 5, text: 'bbb' })
+            }
+          }
+
+          setData(nextData)
+        }}
+      >
         10. 在id為2後面插入id為5與文字為bbb的物件
       </button>
     </>
