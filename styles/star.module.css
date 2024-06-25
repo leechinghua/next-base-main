@@ -1,13 +1,11 @@
 .on {
-  color: gold;
+  /* 利用css的變數來套用元件的中的動態fillColor屬性值 */
+  color: var(--fill-color);
 }
 
 .off {
-  color: gray;
-}
-
-.goodStyle{
-  color:red;
+  /* 利用css的變數來套用元件的中的動態emptyColor屬性值 */
+  color: var(--empty-color);
 }
 
 .starBtn{
