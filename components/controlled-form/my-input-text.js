@@ -67,8 +67,7 @@ export default function MyInputText() {
           onChange={(e) => {
             setInputPassword(e.target.value)
           }}
-        />
-        {''}
+        />{' '}
         <input
           type="checkbox"
           value={inputPassword}
