@@ -12,10 +12,11 @@ import Loader from '@/components/loader'
 //     "price": 25000,
 //     "tags": "蘋果,大螢幕"
 //   }
-
 export default function Detail() {
+  // 第1步: 宣告路由器
+  // router.query: 物件值，裡面有包含pid屬性值
+  // router.isReady: 布林值，一開始為false，如果改變為true代表此頁面已完成"水合作用"，才能得到query值
   const router = useRouter()
-  // 宣告商品狀態
   const [product, setProduct] = useState({
     id: 0,
     name: '',
@@ -24,23 +25,28 @@ export default function Detail() {
     tags: '',
     picture: '',
   })
-  // 宣告一個載入的狀態信號值
-  // 設定一開始進入此頁面就要向伺服器獲取資料，不出現初始值
-  const [isLoading, setIsLoading] = useState(true)
 
+  const [isLoading, setIsLoading] = useState(true)
   // 與伺服器作fetch獲得資料
   const getProduct = async (pid) => {
-    const url = 'http://localhost:3005/api/my-products/' + pid
+    const url =
+      'https://my-json-server.typicode.com/eyesofkids/json-fake-data/products/' +
+      pid
 
     // 使用try-catch語句，讓和伺服器連線的程式能作錯誤處理
     try {
       const res = await fetch(url)
-      const resData = await res.json()
-
+      const data = await res.json()
+      console.log(data)
       // 設定到狀態中 ===> 進入update階段，觸發重新渲染(re-render)，呈現資料
-      // 確定資料是純物件資料類型才設定到狀態中(最基本的保護)
-      if (resData.status === 'success') {
-        setProduct(resData.data.product)
+      // 確定資料是陣列資料類型才設定到狀態中(最基本的保護)
+      if (
+        typeof data === 'object' &&
+        data !== null &&
+        !Array.isArray(data) &&
+        data.id // 至少id要有值(非0)
+      ) {
+        setProduct(data)
         // 關閉載入動畫，1.5再關閉
         setTimeout(() => {
           setIsLoading(false)
@@ -51,10 +57,6 @@ export default function Detail() {
     }
   }
 
-  useEffect(() => {
-    console.log('render router.query=', router.query)
-  })
-
   // 樣式3: didMount+didUpdate
   useEffect(() => {
     if (router.isReady) {
@@ -63,9 +65,9 @@ export default function Detail() {
       // 向伺服器要求資料
       getProduct(router.query.pid)
     }
+    // 以下為註解掉eslint的警告一行
     // eslint-disable-next-line
   }, [router.isReady])
-
   return (
     <>
       <h1>商品詳細頁</h1>
