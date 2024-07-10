@@ -1,18 +1,6 @@
 import { useState } from 'react'
-import { useAuth } from '@/hooks/use-auth'
-import Link from 'next/link'
 
 export default function LoginForm() {
-  // auth物件狀態的樣貌:
-  // {
-  //   isAuth: false,
-  //   userData: {
-  //     id: 0,
-  //     username: '',
-  //   }
-  // }
-  const { auth, setAuth, handleCheck, handleLogin, handleLogout } = useAuth()
-
   // 狀態使用物件類型，物件中的屬性名稱對應到欄位的名稱(name屬性)
   const [user, setUser] = useState({
     username: '',
@@ -30,11 +18,18 @@ export default function LoginForm() {
 
   // 多欄位共用事件處理函式
   const handleFieldChange = (e) => {
+    // 可以用e.target來觀察或檢測是哪個欄位觸發事件
+    // console.log(e.target.name, e.target.type, e.target.value)
+
+    // ES6中的特性: Computed Property Names(計算得出來的屬性名稱)
+    // [e.target.name]: e.target.value
+    // ^^^^^^^^^^^^^^^ 這裡可以動態代入變數值或表達式，計算出物件屬性名稱(字串)
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Object_initializer#computed_property_names
     setUser({ ...user, [e.target.name]: e.target.value })
   }
 
   // 表單送出事件處理函式
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     // 先阻擋form表單元件的預設送出行為
     e.preventDefault()
 
@@ -72,21 +67,31 @@ export default function LoginForm() {
     // 表單檢查--- END ---
 
     // 檢查都沒問題才會到這裡執行
-    handleLogin(user)
+    try {
+      const url = 'http://localhost:3005/api/members/login'
+      const res = await fetch(url, {
+        credentials: 'include', // 設定cookie或是存取隱私資料時要加這個參數
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(user),
+      })
+
+      const resData = await res.json()
+      console.log(resData)
+
+      alert('送到伺服器去')
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return (
     <>
-      <h1
-        onClick={() => {
-          setUser({ username: 'herry', password: '12345' })
-        }}
-        role="presentation"
-      >
-        會員登入表單
-      </h1>
+      <h1>會員登入表單</h1>
       <hr />
-      <Link href="/cs-0710/member/profile-form">個人資料頁</Link>
       <form onSubmit={handleSubmit}>
         {/* 使用form表單元素都應給每個欄位name屬性值 */}
         <div>
@@ -124,20 +129,7 @@ export default function LoginForm() {
         <div>
           {/* 在form表單元素中的button建議加上類型type，沒寫或預設是submit，點按都會觸發提交submit事件 */}
           <button type="submit">登入</button>
-          <button type="button" onClick={handleLogout}>
-            登出
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setUser({ username: 'herry', password: '12345' })
-            }}
-          >
-            一鍵輸入
-          </button>
-          <button type="button" onClick={handleCheck}>
-            檢查登入狀態
-          </button>
+          <button type="button">登出</button>
         </div>
       </form>
       <style jsx>

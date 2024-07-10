@@ -1,18 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/hooks/use-auth'
-import Loader from '@/components/loader'
 
 // 開發期間使用，之後可以從useAuth中得到
-//const userId = 1
+const userId = 1
 
 export default function ProfileForm() {
-  const { auth } = useAuth()
-  const userId = auth?.userData?.id
-
-  // 宣告一個載入的狀態信號值
-  // 設定一開始進入此頁面就要向伺服器獲取資料，不出現初始值
-  const [isLoading, setIsLoading] = useState(true)
-
   // 狀態為物件，屬性對應到表單的欄位名稱
   const [user, setUser] = useState({
     name: '',
@@ -146,10 +137,6 @@ export default function ProfileForm() {
           username: member.username,
           email: member.email,
         })
-
-        setTimeout(() => {
-          setIsLoading(false)
-        }, 1500)
       }
     } catch (e) {
       console.error(e)
@@ -158,14 +145,10 @@ export default function ProfileForm() {
 
   // didMount時，先使用userId向伺服器fetch要會員資料
   useEffect(() => {
-    console.log(userId)
-
-    if (userId) {
-      getMember()
-    }
+    getMember()
   }, [])
 
-  const display = (
+  return (
     <>
       <h1>會員資料表單</h1>
       <form onSubmit={handleSubmit}>
@@ -258,13 +241,4 @@ export default function ProfileForm() {
       </style>
     </>
   )
-
-  const spinner = (
-    <>
-      <h1>正在查詢是否有權限進入...</h1>
-      <Loader />
-    </>
-  )
-
-  return <>{isLoading ? spinner : display}</>
 }

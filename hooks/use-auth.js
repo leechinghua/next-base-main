@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 
 // 1. 建立與導出它
@@ -18,51 +18,155 @@ export function AuthProvider({ children }) {
     userData: {
       id: 0,
       username: '',
-      email: '',
-      name: '',
     },
   })
 
-  // 一般命名: login, logout, register
-  // 現代另外命名: signIn, signOut, signUp
-  const login = (username, password) => {
-    if (username === 'ron' && password === '11111') {
-      setAuth({
-        isAuth: true,
-        userData: {
-          id: 2,
-          username: 'ron',
-          email: 'ron@test.com',
-          name: 'Ron',
+  // 解析accessToken用的函式
+  const parseJwt = (token) => {
+    const base64Payload = token.split('.')[1]
+    const payload = Buffer.from(base64Payload, 'base64')
+    return JSON.parse(payload.toString())
+  }
+
+  const handleLogout = async () => {
+    try {
+      const url = 'http://localhost:3005/api/members/logout'
+      const res = await fetch(url, {
+        credentials: 'include', // 設定cookie或是存取隱私資料時要加這個參數
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({}),
       })
 
-      alert('登入成功')
-      // 導向個人資料頁
-      router.push('/cs-0625/user/profile')
-    } else {
-      alert('帳號密碼錯誤')
+      const resData = await res.json()
+
+      if (resData.status === 'success') {
+        // 設定全域的AuthContext(useAuth勾子)
+        const nextAuth = {
+          isAuth: false,
+          userData: {
+            id: 0,
+            username: '',
+          },
+        }
+
+        setAuth(nextAuth)
+      }
+      alert('成功登出')
+    } catch (e) {
+      console.error(e)
     }
   }
 
-  const logout = () => {
-    setAuth({
-      isAuth: false,
-      userData: {
-        id: 0,
-        username: '',
-        email: '',
-        name: '',
-      },
-    })
+  const handleLogin = async (user) => {
+    try {
+      const url = 'http://localhost:3005/api/members/login'
+      const res = await fetch(url, {
+        credentials: 'include', // 設定cookie或是存取隱私資料時要加這個參數
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(user),
+      })
+
+      const resData = await res.json()
+
+      if (resData.status === 'success') {
+        // 從jwt中剖析出其中的會員資訊(id, username)
+        const payload = parseJwt(resData.data.accessToken)
+
+        // 設定全域的AuthContext(useAuth勾子)
+        const nextAuth = {
+          isAuth: true,
+          userData: {
+            id: payload.id,
+            username: payload.username,
+          },
+        }
+
+        setAuth(nextAuth)
+
+        alert('登入成功')
+      }
+    } catch (e) {
+      console.error(e)
+    }
   }
 
+  // 註冊路由
+  // 登入路由 - 當要進入隱私路由但未登入時，會跳轉到登入路由
+  const loginRoute = '/cs-0710/member/login-form'
+  // 隱私(保護)路由
+  const protectedRoutes = ['/cs-0710/member/profile-form']
+
+  const handleCheck = async () => {
+    try {
+      const url = 'http://localhost:3005/api/members/check'
+      const res = await fetch(url, {
+        credentials: 'include', // 設定cookie或是存取隱私資料時要加這個參數
+        method: 'GET',
+      })
+
+      const resData = await res.json()
+      console.log(resData)
+
+      if (resData.status === 'success') {
+        const member = resData.data.member
+        // 設定全域的AuthContext(useAuth勾子)
+        const nextAuth = {
+          isAuth: true,
+          userData: {
+            id: member.id,
+            username: member.username,
+          },
+        }
+        setAuth(nextAuth)
+      } else {
+        // 作隱私路由跳轉
+        if (protectedRoutes.includes(router.pathname)) {
+          // 減緩跳轉時間
+          setTimeout(() => {
+            alert('無進入權限，請先登入!')
+            router.push(loginRoute)
+          }, 1500)
+        }
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  // didMount+didUpdate
+  useEffect(() => {
+    if (router.isReady && !auth.isAuth) {
+      handleCheck()
+    }
+    // 加入router.pathname是為了要在伺服器檢查後
+    // 如果是隱私路由+未登入，就要執行跳轉到登入頁路由的工作
+    // eslint-disable-next-line
+  }, [router.isReady, router.pathname])
+
   return (
-    <AuthContext.Provider value={{ auth, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        auth,
+        setAuth,
+        handleCheck,
+        handleLogin,
+        handleLogout,
+        parseJwt,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )
 }
+
 // 3. 建立一個包裝useContext與對應context的專用函式
 // 目的: 讓消費者們(consumers)方便呼叫使用共享狀態，提高可閱讀性
 export const useAuth = () => useContext(AuthContext)

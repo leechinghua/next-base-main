@@ -1,18 +1,6 @@
-import { useState, useEffect } from 'react'
-import { useAuth } from '@/hooks/use-auth'
-import Loader from '@/components/loader'
+import { useState } from 'react'
 
-// 開發期間使用，之後可以從useAuth中得到
-//const userId = 1
-
-export default function ProfileForm() {
-  const { auth } = useAuth()
-  const userId = auth?.userData?.id
-
-  // 宣告一個載入的狀態信號值
-  // 設定一開始進入此頁面就要向伺服器獲取資料，不出現初始值
-  const [isLoading, setIsLoading] = useState(true)
-
+export default function RegisterForm() {
   // 狀態為物件，屬性對應到表單的欄位名稱
   const [user, setUser] = useState({
     name: '',
@@ -20,6 +8,7 @@ export default function ProfileForm() {
     username: '',
     password: '',
     confirmPassword: '',
+    agree: false, // checkbox 同意會員註冊條款
   })
 
   // 錯誤訊息狀態
@@ -29,6 +18,7 @@ export default function ProfileForm() {
     username: '',
     password: '',
     confirmPassword: '',
+    agree: '', // 呈現錯誤訊息用字串
   })
 
   // checkbox 呈現密碼用
@@ -39,7 +29,11 @@ export default function ProfileForm() {
   const handleFieldChange = (e) => {
     console.log(e.target.name, e.target.value, e.target.type)
 
-    setUser({ ...user, [e.target.name]: e.target.value })
+    if (e.target.name === 'agree') {
+      setUser({ ...user, [e.target.name]: e.target.checked })
+    } else {
+      setUser({ ...user, [e.target.name]: e.target.value })
+    }
 
     // ES6特性: 計算得來的屬性名稱(computed property names)
     // [e.target.name]: e.target.value
@@ -76,13 +70,17 @@ export default function ProfileForm() {
       newErrors.confirmPassword = '密碼與確認密碼需要一致'
     }
 
-    // if (!user.password) {
-    //   newErrors.password = '密碼為必填'
-    // }
+    if (!user.password) {
+      newErrors.password = '密碼為必填'
+    }
 
-    // if (!user.confirmPassword) {
-    //   newErrors.confirmPassword = '確認密碼為必填'
-    // }
+    if (!user.confirmPassword) {
+      newErrors.confirmPassword = '確認密碼為必填'
+    }
+
+    if (!user.agree) {
+      newErrors.agree = '請先同意會員註冊條款'
+    }
 
     // 呈現錯誤訊息
     setErrors(newErrors)
@@ -98,76 +96,28 @@ export default function ProfileForm() {
 
     // 最後檢查完全沒問題才送到伺服器(ajax/fetch)
     try {
-      // 建立只需要傳到後端的資料物件
-      // 帳號不允許改
-      const updatedMember = {
-        name: user.name,
-        email: user.email,
-      }
-
-      // 密碼有填再加入
-      if (user.password) {
-        updatedMember.password = user.password
-      }
-
-      const url = `http://localhost:3005/api/members/${userId}/profile`
+      const url = 'http://localhost:3005/api/members'
       const res = await fetch(url, {
-        method: 'PUT',
+        method: 'POST',
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updatedMember),
+        body: JSON.stringify(user),
       })
 
       const resData = await res.json()
       console.log(resData)
 
-      alert('修改成功')
+      alert('送到伺服器去')
     } catch (e) {
       console.error(e)
     }
   }
 
-  // 用會員id獲取資料
-  const getMember = async () => {
-    try {
-      const url = `http://localhost:3005/api/members/${userId}`
-
-      const res = await fetch(url)
-      const resData = await res.json()
-      console.log(resData)
-      if (resData.status === 'success') {
-        const member = resData.data.member
-        // 設定會員資料(除了密碼)
-        setUser({
-          ...user,
-          name: member.name,
-          username: member.username,
-          email: member.email,
-        })
-
-        setTimeout(() => {
-          setIsLoading(false)
-        }, 1500)
-      }
-    } catch (e) {
-      console.error(e)
-    }
-  }
-
-  // didMount時，先使用userId向伺服器fetch要會員資料
-  useEffect(() => {
-    console.log(userId)
-
-    if (userId) {
-      getMember()
-    }
-  }, [])
-
-  const display = (
+  return (
     <>
-      <h1>會員資料表單</h1>
+      <h1>註冊表單</h1>
       <form onSubmit={handleSubmit}>
         <label>
           姓名:{' '}
@@ -200,7 +150,7 @@ export default function ProfileForm() {
             name="username"
             value={user.username}
             onChange={handleFieldChange}
-            disabled
+            // required
           />
         </label>
         <br />
@@ -246,7 +196,54 @@ export default function ProfileForm() {
         <br />
         <span className="error">{errors.confirmPassword}</span>
         <br />
-        <button type="submit">修改</button>
+        <label>
+          <input
+            type="checkbox"
+            name="agree"
+            checked={user.agree}
+            onChange={handleFieldChange}
+          />{' '}
+          我同意網站會員註冊條款
+        </label>
+        <br />
+        <span className="error">{errors.agree}</span>
+        <br />
+        <button type="submit">註冊</button>
+        <button
+          type="button"
+          onClick={() => {
+            // 重置需要自行設定回初始化值
+            setUser({
+              name: '',
+              email: '',
+              username: '',
+              password: '',
+              confirmPassword: '',
+              agree: false,
+            })
+
+            setShowPassword(false)
+            setShowConfirmPassword(false)
+          }}
+        >
+          重置
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            // 重置需要自行設定回初始化值
+            setUser({
+              name: '榮恩',
+              email: 'ron@test.com',
+              username: 'ron',
+              password: '123456',
+              confirmPassword: '123456',
+              agree: true,
+            })
+          }}
+        >
+          一鍵填入
+        </button>
       </form>
       <style jsx>
         {`
@@ -258,13 +255,4 @@ export default function ProfileForm() {
       </style>
     </>
   )
-
-  const spinner = (
-    <>
-      <h1>正在查詢是否有權限進入...</h1>
-      <Loader />
-    </>
-  )
-
-  return <>{isLoading ? spinner : display}</>
 }
