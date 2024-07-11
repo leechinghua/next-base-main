@@ -1,6 +1,6 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext } from 'react'
 import { useImmerReducer } from 'use-immer'
-import { produce } from 'immer'
+// import { produce } from 'immer'
 
 // 準備工作1. state初始值
 const initState = {
@@ -31,31 +31,30 @@ const item = {
 // action = { type, payload }
 // 這裡的state相當於immer中的draft(代理狀態)，並沒有違反狀態是"不可改變性的原則"
 
-const reducer = (state, action) =>
-  produce(state, (draft) => {
-    switch (action.type) {
-      case 'cart/decrease':
-        draft.items.map((v) => {
-          if (v.id === action.payload.id) return { ...v, qty: v.qty - 1 }
-          else return v
-        })
-        break
-      case 'cart/increase':
-        draft.items.map((v) => {
-          if (v.id === action.payload.id) return { ...v, qty: v.qty + 1 }
-          else return v
-        })
-        break
-      case 'cart/deleteItem':
-        draft.items.filter((v) => v.id !== action.payload.id)
-        break
-      case 'cart/addItem':
-        draft.items.push(action.payload)
-        break
-      default:
-        throw new Error()
-    }
-  })
+const reducer = (state, action) => {
+  switch (action.type) {
+    case 'cart/decrease':
+      state.items = state.items.map((v) => {
+        if (v.id === action.payload.id) return { ...v, qty: v.qty - 1 }
+        else return v
+      })
+      break
+    case 'cart/increase':
+      state.items = state.items.map((v) => {
+        if (v.id === action.payload.id) return { ...v, qty: v.qty + 1 }
+        else return v
+      })
+      break
+    case 'cart/deleteItem':
+      state.items = state.items.filter((v) => v.id !== action.payload.id)
+      break
+    case 'cart/addItem':
+      state.items.push(action.payload)
+      break
+    default:
+      throw new Error()
+  }
+}
 
 // 1. 建立與導出它
 const CartContext = createContext(null)
@@ -64,44 +63,50 @@ const CartContext = createContext(null)
 export function CartProvider({ children }) {
   // 加入到購物車的商品項目
   // 以其中的物件資料比較原商品物件，需要多了一個qty(數量)屬性
-  const [items, setItems] = useState([])
+  // const [items, setItems] = useState([])
+  const [cartState, dispatch] = useImmerReducer(reducer, initState)
+  // items 轉變為衍生狀態(狀態的一部份)
+  const items = cartState.items || []
 
   const handleIncrease = (id) => {
-    const nextItems = items.map((v, i) => {
-      // 如果符合(id相當於傳入的id)的物件，遞增其中屬性qty的數字
-      if (v.id === id) return { ...v, qty: v.qty + 1 }
-      // 否則回傳原本物件
-      else return v
-    })
+    dispatch({ type: 'cart/increase', payload: { id } })
+    // const nextItems = items.map((v, i) => {
+    //   // 如果符合(id相當於傳入的id)的物件，遞增其中屬性qty的數字
+    //   if (v.id === id) return { ...v, qty: v.qty + 1 }
+    //   // 否則回傳原本物件
+    //   else return v
+    // })
 
-    setItems(nextItems)
+    // setItems(nextItems)
   }
 
   const handleDecrease = (id) => {
-    let nextItems = items.map((v, i) => {
-      // 如果符合(id相當於傳入的id)的物件，遞減其中屬性qty的數字
-      if (v.id === id) return { ...v, qty: v.qty - 1 }
-      // 否則回傳原本物件
-      else return v
-    })
+    dispatch({ type: 'cart/decrease', payload: { id } })
+    // let nextItems = items.map((v, i) => {
+    //   // 如果符合(id相當於傳入的id)的物件，遞減其中屬性qty的數字
+    //   if (v.id === id) return { ...v, qty: v.qty - 1 }
+    //   // 否則回傳原本物件
+    //   else return v
+    // })
 
-    // 官網解法，設定到狀態前，先過濾掉qty=0的item
-    nextItems = nextItems.filter((v) => v.qty > 0)
+    // // 官網解法，設定到狀態前，先過濾掉qty=0的item
+    // nextItems = nextItems.filter((v) => v.qty > 0)
 
-    setItems(nextItems)
+    // setItems(nextItems)
   }
 
   const handleRemove = (id) => {
-    const nextItems = items.filter((v, i) => {
-      return v.id !== id
-    })
+    dispatch({ type: 'cart/deleteItem', payload: { id } })
+    // const nextItems = items.filter((v, i) => {
+    //   return v.id !== id
+    // })
 
-    setItems(nextItems)
+    // setItems(nextItems)
   }
 
   const handleAdd = (product) => {
     // 先尋找此商品是否已經在購物車裡
-    const foundIndex = items.findIndex((v) => v.id === product.id)
+    const foundIndex = cartState.items.findIndex((v) => v.id === product.id)
 
     if (foundIndex > -1) {
       // 如果有找到===>遞增數量
@@ -110,8 +115,9 @@ export function CartProvider({ children }) {
       // 否則 ===> 新增商品到購物車項目
       // 擴充商品物件多一個qty新屬性，預設為1
       const newItem = { ...product, qty: 1 }
-      const nextItems = [newItem, ...items]
-      setItems(nextItems)
+      dispatch({ type: 'cart/addItem', payload: newItem })
+      // const nextItems = [newItem, ...items]
+      // setItems(nextItems)
     }
   }
 
